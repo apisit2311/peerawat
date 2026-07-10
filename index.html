@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>พีระวัฒน์เครื่องใช้ไฟฟ้าและวัสดุก่อสร้าง</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        /* --- ธีมใหม่: Industrial Loft & Premium Gold --- */
+        :root {
+            --dark-charcoal: #24292e;   /* สีเทาเข้มแบบโมเดิร์น */
+            --premium-gold: #b8922f;    /* สีทองหรูหราสำหรับเน้นจุดสำคัญ */
+            --light-bg: #f4f6f8;        /* สีพื้นหลังภายนอก */
+            --text-dark: #2f3542;       /* สีตัวอักษรเนื้อหา */
+            --border-line: #e1e8ed;     /* สีเส้นขอบนุ่มตา */
+        }
+
+        body { 
+            font-family: 'Sarabun', sans-serif; 
+            color: var(--text-dark); 
+            line-height: 1.5; 
+            background-color: var(--light-bg); 
+            padding: 40px 20px; 
+            margin: 0;
+        }
+        
+        .document-container { 
+            width: 210mm; 
+            min-height: 297mm; 
+            margin: 0 auto; 
+            background: #fff; 
+            padding: 25mm 20mm; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.05); 
+            border-top: 6px solid var(--dark-charcoal); /* แถบสีด้านบนเพิ่มความหรู */
+            box-sizing: border-box;
+            position: relative; 
+        }
+        
+        /* --- ฟิลด์กรอกข้อมูลดีไซน์ไร้กรอบ (Borderless) --- */
+        input[type="text"], input[type="number"], textarea, .editable-desc, select {
+            font-family: 'Sarabun', sans-serif; 
+            font-size: 14px;
+            border: 1px solid transparent;
+            padding: 6px; 
+            width: 100%; 
+            box-sizing: border-box;
+            background-color: #f8f9fa; 
+            transition: all 0.2s;
+            border-radius: 4px;
+        }
+        input:focus, textarea:focus, .editable-desc:focus, select:focus { 
+            border: 1px solid var(--premium-gold); 
+            outline: none; 
+            background-color: #fff; 
+            box-shadow: 0 0 8px rgba(184,146,47,0.1);
+        }
+        textarea { resize: vertical; }
+
+        select.unit-select { cursor: pointer; text-align: center; text-align-last: center; -webkit-appearance: none; }
+
+        .doc-title-editable { 
+            font-size: 28px !important; 
+            font-weight: 700; 
+            color: var(--dark-charcoal); 
+            text-align: left;
+            border-bottom: 3px solid var(--premium-gold);
+            padding: 5px 0; 
+            display: inline-block;
+            outline: none;
+            min-width: 180px;
+              
+        }
+
+        .editable-desc { min-height: 32px; word-wrap: break-word; white-space: pre-wrap; text-align: left; }
+        .editable-desc:empty:before { content: attr(data-placeholder); color: #bbb; }
+
+        /* --- สลับตำแหน่งเลเอาต์หัวเอกสารใหม่ --- */
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start; 
+            margin-bottom: 40px; 
+        }
+        .document-title { width: 45%; text-align: left; } /* ย้ายประเภทเอกสารมาฝั่งซ้าย */
+        .company-info { width: 50%; text-align: right; } /* ย้ายชื่อร้านไปฝั่งขวา */
+        
+        /* --- โซนข้อมูลผู้ซื้อ/ผู้ขายแบบคลีนๆ --- */
+        .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 35px;
+            gap: 30px;
+        }
+        .customer-box { width: 55%; }
+        .meta-box { width: 40%; }
+        .meta-box table { width: 100%; border-collapse: collapse; }
+        .meta-box td { padding: 4px 0; vertical-align: middle; font-size: 14px; }
+        .meta-box td:first-child { font-weight: 600; color: #555; width: 45%; }
+
+        /* --- ตารางสินค้าดีไซน์แบบโปร่งสบายตาสไตล์มินิมอล --- */
+        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; }
+        .items-table th { background-color: #f8f9fa; color: var(--dark-charcoal); padding: 14px 10px; text-align: left; font-size: 14px; font-weight: 600; border-bottom: 2px solid var(--dark-charcoal); }
+        .items-table th.text-center, .items-table td.text-center { text-align: center; }
+        .items-table th.text-right, .items-table td.text-right { text-align: right; }
+        .items-table td { 
+    padding: 10px 8px; 
+    border-bottom: 1px solid var(--border-line); 
+    vertical-align: top;    /* 🔥 เปลี่ยนเป็น top เพื่อให้ทุกอย่างชิดด้านบนพร้อมกัน */
+    font-size: 14px; 
+}
+        /* ค้นหาคลาสนี้ในโค้ดเดิม แล้วแทนที่ด้วยโค้ดด้านล่างนี้ได้เลยครับ */
+.row-number { 
+    font-weight: bold; 
+    color: #999; 
+    vertical-align: top !important; /* บังคับให้ชิดด้านบน */
+    padding-top: 12px !important;   /* ปรับระยะห่างจากขอบบนให้พอดีกับข้อความรายการ */
+}
+        
+        /* --- ปุ่มกดสไตล์ร่วมสมัย --- */
+        .btn { padding: 10px 20px; cursor: pointer; font-family: 'Sarabun'; border: none; border-radius: 4px; font-weight: 600; transition: all 0.2s; font-size: 13px; letter-spacing: 0.5px; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-add { background-color: var(--dark-charcoal); color: white; }
+        .btn-del { background-color: #e55039; color: white; padding: 4px 8px; font-size: 12px; }
+        
+        /* แถบเมนูด้านบนแบบฝังเรียบหรู */
+        .top-controls { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; justify-content: center; gap: 12px; background: rgba(36,41,46,0.95); padding: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .top-controls .btn { border-radius: 4px; color: white; }
+        .btn-save { background-color: #27ae60; }
+        .btn-load { background-color: #2980b9; }
+        .btn-excel { background-color: #1f7343; }
+        .btn-print { background-color: var(--premium-gold); }
+
+        /* --- บล็อกสรุปเงินแบบขีดเส้นใต้คู่เน้นๆ --- */
+        .summary-section { display: flex; justify-content: space-between; margin-top: 30px; margin-bottom: 40px; gap: 20px; align-items: flex-start; }
+        .notes-box { width: 50%; }
+        .summary-table { width: 45%; border-collapse: collapse; }
+        .summary-table td { padding: 8px 0; font-size: 15px; }
+        .summary-table tr.total td { font-weight: 700; color: var(--dark-charcoal); font-size: 19px; border-bottom: 3px double var(--dark-charcoal); padding-top: 15px; }
+
+        .thai-baht-text { font-weight: 600; color: #555; font-size: 13px; padding-top: 8px; text-align: left; word-wrap: break-word; }
+
+        /* --- โซนลายเซ็นท้ายเลเอาต์ --- */
+        .footer-signatures { display: flex; justify-content: space-between; margin-top: 70px; text-align: center; }
+        .signature-container { width: 40%; }
+        .signature-line { border-bottom: 1px solid var(--dark-charcoal); margin: 50px auto 10px; width: 100%; }
+        
+        .toggle-box { cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #888; margin-top: 6px; }
+        .toggle-box input { cursor: pointer; margin: 0; }
+
+        .drag-handle { cursor: grab; color: #ccc; font-size: 16px; user-select: none; }
+        tr.dragging { opacity: 0.3; background-color: #f1f2f6; }
+
+        /* --- โหมดสำหรับการสั่งพิมพ์พิมพ์ตรายาง --- */
+        @media print {
+            body { background: #fff; padding: 0; }
+            .document-container { width: 100%; height: auto; min-height: auto; box-shadow: none; padding: 0; margin: 0; border-top: none; }
+            .no-print { display: none !important; }
+            
+            input, textarea, .editable-desc, .doc-title-editable, select { 
+                border: none !important; background: transparent !important; padding: 0 !important; 
+                appearance: none; -webkit-appearance: none; -moz-appearance: none;
+            }
+            
+            .doc-title-editable { border-bottom: none !important; }
+            .editable-desc { min-height: auto; }
+            textarea { height: auto !important; }
+            tr { page-break-inside: avoid; }
+            .summary-table { width: 55%; }
+            ::placeholder { color: transparent !important; }
+            .editable-desc:empty:before { color: transparent !important; }
+        }
+
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+    </style>
+</head>
+<body>
+
+<div class="top-controls no-print">
+    <button class="btn btn-save" onclick="saveData()">💾 บันทึกไฟล์งาน</button>
+    <button class="btn btn-load" onclick="document.getElementById('file-input').click()">📂 เปิดไฟล์เก่า</button>
+    <input type="file" id="file-input" accept=".json" style="display: none;" onchange="loadData(event)">
+    <button class="btn btn-excel" onclick="exportToExcel()">📊 ส่งออก Excel</button>
+    <button class="btn btn-print" onclick="window.print()">🖨️ สั่งพิมพ์ / PDF</button>
+</div>
+
+<div class="document-container">
+    <div class="header">
+        <div class="document-title">
+            <div contenteditable="true" class="doc-title-editable" id="docType" oninput="updateDocTypeSync()">ใบส่งสินค้า/ใบแจ้งหนี้</div>
+            <input type="text" id="docSubTitle" style="text-align: left; font-weight: bold; color: var(--premium-gold); background: transparent; padding-left: 0;" value="(DELIVERY NOTE / INVOICE)">
+        </div>
+        <div class="company-info">
+            <input type="text" style="font-size: 20px; font-weight: 700; color: var(--dark-charcoal); text-align: right; background: transparent;" value="พีระวัฒน์เครื่องใช้ไฟฟ้าและวัสดุก่อสร้าง">
+            <textarea rows="3" style="font-size: 13px; color: #666; text-align: right; background: transparent; margin-top: 5px;">662 ม.1 ต.หนองนาคำ อ.เมือง จ.อุดรธานี 41000&#10;เบอร์โทรศัพท์: 062-226-2580</textarea>
+        </div>
+    </div>
+
+    <div class="info-section">
+        <div class="customer-box">
+            <strong style="color: var(--dark-charcoal); font-size: 14px; display: block; margin-bottom: 6px;">ลูกค้า / Customer:</strong>
+            <input type="text" id="customer-name" value="บริษัท คู่ค้าทางธุรกิจ จำกัด" style="font-weight: 600;">
+            <textarea id="customer-address" rows="3" style="margin-top: 6px; font-size: 13px;">ระบุที่อยู่ของลูกค้าตรงนี้...</textarea>
+        </div>
+        <div class="meta-box">
+            <table>
+                <tr>
+                    <td>เลขที่เอกสาร:</td>
+                    <td><input type="text" id="doc-num" value="QT2026-001"></td>
+                </tr>
+                <tr>
+                    <td>วันที่ออกเอกสาร:</td>
+                    <td>
+                        <input type="text" id="doc-date" value="" placeholder="คลิกเพื่อใส่วันที่">
+                        <label class="toggle-box no-print">
+                            <input type="checkbox" id="blank-date" onchange="toggleDate()"> ซ่อนวันที่ตอนพิมพ์
+                        </label>
+                    </td>
+                </tr>
+                <tr>
+                    <td>ยืนยันราคาถึงวันที่:</td>
+                    <td><input type="text" id="due-date" value="" placeholder="ระบุวันสิ้นสุดใบเสนอราคา"></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <table class="items-table" id="invoice-table">
+        <thead>
+            <tr>
+                <th class="no-print text-center" style="width: 4%;"></th>
+                <th class="no-print text-center" style="width: 6%;">ลบ</th>
+                <th class="text-center" style="width: 6%;">ลำดับ</th>
+                <th style="width: 46%;">รายการสินค้า / รายละเอียดที่เสนอราคา</th> 
+                <th class="text-center" style="width: 9%;">จำนวน</th>
+                <th class="text-center" style="width: 11%;">หน่วยนับ</th> 
+                <th class="text-right" style="width: 10%;">ราคา/หน่วย</th>
+                <th class="text-right" style="width: 12%;">จำนวนเงิน</th>
+            </tr>
+        </thead>
+        <tbody id="items-body">
+            </tbody>
+    </table>
+    
+    <button class="btn btn-add no-print" onclick="addRow()">+ เพิ่มรายการวัสดุ/บริการ</button>
+
+    <div class="summary-section">
+        <div class="notes-box">
+            <strong style="color: var(--dark-charcoal); font-size: 14px; display: block; margin-bottom: 6px;">หมายเหตุ / Remarks:</strong>
+            <textarea id="document-notes" rows="4" placeholder="ระบุหมายเหตุเพิ่มเติม (ถ้ามี)..."></textarea>
+        </div>
+        <table class="summary-table">
+            <tr>
+                <td style="color: #666;">รวมเป็นเงินทั้งหมด</td>
+                <td class="text-right" id="subtotal" style="font-weight: 500;">0.00</td>
+            </tr>
+            <tr>
+                <td>
+                    <select id="discount-type" style="padding: 2px; font-weight: normal; color: #666; background: transparent; width: 100%; border-radius: 4px; cursor: pointer;">
+                        <option value="หักภาษี ณ ที่จ่าย">หักภาษี ณ ที่จ่าย</option>
+                        <option value="หักส่วนลด">หักส่วนลด</option>
+                    </select>
+                </td>
+                <td class="text-right">
+                    <input type="number" id="discount" class="text-right" value="0" min="0" oninput="calculateTotal()" style="width: 80%; padding: 4px; display: inline-block;">
+                </td>
+            </tr>
+            <tr class="total">
+                <td>ยอดสุทธิทั้งสิ้น</td>
+                <td class="text-right" id="grand-total">0.00</td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <div id="thai-total-text" class="thai-baht-text">(ศูนย์บาทถ้วน)</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="footer-signatures">
+        <div class="signature-container">
+            <div class="signature-line"></div>
+            <input type="text" id="sig-left" value="ผู้รับสินค้า / ใบแจ้งหนี้" style="text-align: center; color: #333; font-weight: 600; background:transparent;">
+            <input type="text" value="วันที่ _____/_____/_____" style="text-align: center; color: #999; font-size: 12px; background:transparent; margin-top: 4px;">
+        </div>
+        <div class="signature-container">
+            <div class="signature-line"></div>
+            <input type="text" id="sig-right" value="ผู้ส่งเอกสาร" style="text-align: center; color: #333; font-weight: 600; background:transparent;">
+            <input type="text" value="วันที่ _____/_____/_____" style="text-align: center; color: #999; font-size: 12px; background:transparent; margin-top: 4px;">
+        </div>
+    </div>
+</div>
+
+<script>
+    // ดรอปดาวน์สำหรับร้านเครื่องใช้ไฟฟ้าและวัสดุก่อสร้าง
+    const unitDropdownHTML = `
+        <select class="unit-select text-center">
+            <optgroup label="วัสดุก่อสร้าง">
+                <option value="ชิ้น">ชิ้น</option><option value="อัน">อัน</option><option value="กล่อง">กล่อง</option><option value="ลัง">ลัง</option><option value="ถุง">ถุง</option><option value="ถัง">ถัง</option><option value="ชุด">ชุด</option>
+            </optgroup>
+            <optgroup label="อุปกรณ์ไฟฟ้า/สายไฟ">
+                <option value="ตัว">ตัว</option><option value="เครื่อง">เครื่อง</option><option value="ม้วน">ม้วน</option><option value="เมตร">เมตร</option><option value="เส้น">เส้น</option><option value="ท่อน">ท่อน</option>
+            </optgroup>
+            <optgroup label="งานบริการ">
+                <option value="จุด">จุด</option><option value="งาน">งาน</option><option value="เหมา">เหมา</option><option value="ครั้ง">ครั้ง</option>
+            </optgroup>
+        </select>
+    `;
+
+    function getTodayThai() {
+        const months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+        const d = new Date();
+        return d.getDate() + ' ' + months[d.getMonth()] + ' ' + (d.getFullYear() + 543);
+    }
+
+    function updateDocTypeSync() {
+        const docText = document.getElementById('docType').innerText;
+        const subTitle = document.getElementById('docSubTitle');
+        const sigLeft = document.getElementById('sig-left');
+        const sigRight = document.getElementById('sig-right');
+        
+        if (docText.includes("เสนอราคา")) {
+            subTitle.value = "(QUOTATION)";
+            sigLeft.value = "ผู้อนุมัติสั่งซื้อ"; sigRight.value = "ผู้เสนอราคา";
+        } else if (docText.includes("รับเงิน") || docText.includes("เสร็จ")) {
+            subTitle.value = "(RECEIPT)";
+            sigLeft.value = "ผู้ชำระเงิน"; sigRight.value = "ผู้รับเงิน";
+        } else if (docText.includes("ส่งสินค้า") || docText.includes("แจ้งหนี้")) {
+            subTitle.value = "(DELIVERY NOTE / INVOICE)";
+            sigLeft.value = "ผู้รับสินค้า / ใบแจ้งหนี้"; sigRight.value = "ผู้ส่งสินค้า";
+        } else {
+            subTitle.value = "(INVOICE)";
+            sigLeft.value = "ผู้รับสินค้า / บริการ"; sigRight.value = "ผู้ออกเอกสาร";
+        }
+    }
+
+    function toggleDate() {
+        const dateInput = document.getElementById('doc-date');
+        const isBlank = document.getElementById('blank-date').checked;
+        if (isBlank) { dateInput.dataset.savedDate = dateInput.value; dateInput.value = ""; } 
+        else { dateInput.value = dateInput.dataset.savedDate || getTodayThai(); }
+    }
+
+    function updateRowNumbers() {
+        const rows = document.querySelectorAll('#items-body tr');
+        rows.forEach((row, index) => { row.querySelector('.row-number').innerText = index + 1; });
+    }
+
+    function arabicToThaiBaht(number) {
+        if (number === 0) return "(ศูนย์บาทถ้วน)";
+        
+        number = parseFloat(number).toFixed(2);
+        const numberParts = number.split('.');
+        const bahtPart = numberParts[0];
+        const satangPart = numberParts[1];
+        
+        const thaiNumbers = ["ศูนย์", "หนึ่ง", "สอง", "สาม", "สี่", "ห้า", "หก", "เจ็ด", "แปด", "เก้า"];
+        const thaiPositions = ["", "สิบ", "ร้อย", "พัน", "หมื่น", "แสน", "ล้าน"];
+        
+        let bahtText = "";
+        const bahtLength = bahtPart.length;
+        
+        for (let i = 0; i < bahtLength; i++) {
+            const digit = parseInt(bahtPart.charAt(i));
+            const pos = bahtLength - i - 1;
+            
+            if (digit !== 0) {
+                if (pos % 6 === 1 && digit === 1) bahtText += "สิบ";
+                else if (pos % 6 === 1 && digit === 2) bahtText += "ยี่สิบ";
+                else if (pos % 6 === 0 && digit === 1 && i > 0) bahtText += "เอ็ด";
+                else bahtText += thaiNumbers[digit];
+                
+                bahtText += thaiPositions[pos % 6];
+            }
+            if (pos % 6 === 0 && pos > 0) bahtText += "ล้าน";
+        }
+        
+        if (bahtText !== "") bahtText += "บาท";
+        
+        let satangText = "";
+        if (parseInt(satangPart) !== 0) {
+            const digit1 = parseInt(satangPart.charAt(0));
+            const digit2 = parseInt(satangPart.charAt(1));
+            
+            if (digit1 !== 0) {
+                if (digit1 === 1) satangText += "สิบ";
+                else if (digit1 === 2) satangText += "ยี่สิบ";
+                else satangText += thaiNumbers[digit1] + "สิบ";
+            }
+            if (digit2 !== 0) {
+                if (digit2 === 1 && digit1 !== 0) satangText += "เอ็ด";
+                else satangText += thaiNumbers[digit2];
+            }
+            satangText += "สตางค์";
+        } else {
+            satangText += "ถ้วน";
+        }
+        
+        return "(" + bahtText + satangText + ")";
+    }
+
+    function calculateTotal() {
+        let subtotal = 0;
+        const rows = document.querySelectorAll('#items-body tr');
+        rows.forEach(row => {
+            const qty = parseFloat(row.querySelector('.qty').value) || 0;
+            const price = parseFloat(row.querySelector('.price').value) || 0;
+            const total = qty * price;
+            row.querySelector('.row-total').innerText = total.toLocaleString('th-TH', {minimumFractionDigits: 2});
+            subtotal += total;
+        });
+        
+        const discount = parseFloat(document.getElementById('discount').value) || 0;
+        const grandTotal = Math.max(0, subtotal - discount);
+
+        document.getElementById('subtotal').innerText = subtotal.toLocaleString('th-TH', {minimumFractionDigits: 2});
+        document.getElementById('grand-total').innerText = grandTotal.toLocaleString('th-TH', {minimumFractionDigits: 2});
+        document.getElementById('thai-total-text').innerText = arabicToThaiBaht(grandTotal);
+    }
+
+    function addRow(data = null) {
+        const tbody = document.getElementById('items-body');
+        const tr = document.createElement('tr');
+        tr.className = 'item-row';
+        
+        const desc = data ? data.desc : '';
+        const qty = data ? data.qty : 1;
+        const unit = data ? data.unit : 'ชิ้น';
+        const price = data ? data.price : 0;
+
+        tr.innerHTML = `
+            <td class="no-print text-center drag-handle" title="คลิกค้างเพื่อลากสลับตำแหน่ง">☰</td>
+            <td class="no-print text-center"><button class="btn btn-del" onclick="deleteRow(this)">ลบ</button></td>
+            <td class="text-center row-number" style="vertical-align: top !important; padding-top: 12px !important;"></td>
+            <td><div contenteditable="true" class="editable-desc" data-placeholder="พิมพ์รายการสินค้า / อุปกรณ์ก่อสร้าง">${desc}</div></td>
+            <td><input type="number" class="qty text-center" value="${qty}" min="1" oninput="calculateTotal()"></td>
+            <td>${unitDropdownHTML}</td>
+            <td><input type="number" class="price text-right" value="${price}" min="0" oninput="calculateTotal()"></td>
+            <td class="text-right row-total" style="font-weight: 500;">0.00</td>
+        `;
+        tbody.appendChild(tr);
+        
+        const unitSelect = tr.querySelector('.unit-select');
+        unitSelect.value = unit;
+
+        attachDragEvents(tr);
+        updateRowNumbers(); 
+        calculateTotal();
+        
+        if(!data) tr.querySelector('.editable-desc').focus();
+    }
+
+    function deleteRow(button) { button.closest('tr').remove(); updateRowNumbers(); calculateTotal(); }
+
+    let draggedRow = null;
+    const tbody = document.getElementById('items-body');
+
+    function attachDragEvents(tr) {
+        const handle = tr.querySelector('.drag-handle');
+        handle.addEventListener('mouseenter', () => tr.setAttribute('draggable', 'true'));
+        handle.addEventListener('mouseleave', () => tr.removeAttribute('draggable'));
+        
+        tr.addEventListener('dragstart', (e) => {
+            draggedRow = tr;
+            setTimeout(() => tr.classList.add('dragging'), 0);
+        });
+        tr.addEventListener('dragend', () => {
+            tr.classList.remove('dragging'); draggedRow = null; updateRowNumbers();
+        });
+    }
+
+    tbody.addEventListener('dragover', e => {
+        e.preventDefault();
+        if (!draggedRow) return;
+        const afterElement = getDragAfterElement(tbody, e.clientY);
+        if (afterElement == null) { tbody.appendChild(draggedRow); } 
+        else { tbody.insertBefore(draggedRow, afterElement); }
+    });
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.item-row:not(.dragging)')];
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) { return { offset: offset, element: child }; } 
+            else { return closest; }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    function saveData() {
+        const data = {
+            docType: document.getElementById('docType').innerText,
+            docNum: document.getElementById('doc-num').value,
+            docDate: document.getElementById('doc-date').value,
+            dueDate: document.getElementById('due-date').value,
+            customerName: document.getElementById('customer-name').value,
+            customerAddress: document.getElementById('customer-address').value,
+            notes: document.getElementById('document-notes').value,
+            discount: document.getElementById('discount').value,
+            discountType: document.getElementById('discount-type').value,
+            incVat: false,
+            items: []
+        };
+
+        document.querySelectorAll('#items-body tr').forEach(tr => {
+            data.items.push({
+                desc: tr.querySelector('.editable-desc').innerText,
+                qty: tr.querySelector('.qty').value,
+                unit: tr.querySelector('.unit-select').value,
+                price: tr.querySelector('.price').value
+            });
+        });
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+        const dlAnchorElem = document.createElement('a');
+        dlAnchorElem.setAttribute("href", dataStr);
+        dlAnchorElem.setAttribute("download", (data.docNum || "Invoice") + "_SaveData.json");
+        document.body.appendChild(dlAnchorElem);
+        dlAnchorElem.click();
+        dlAnchorElem.remove();
+        
+        alert("บันทึกไฟล์งานสำเร็จ!");
+    }
+
+    function loadData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                
+                document.getElementById('docType').innerText = data.docType || "ใบส่งสินค้า/ใบแจ้งหนี้";
+                document.getElementById('doc-num').value = data.docNum || "";
+                document.getElementById('doc-date').value = data.docDate || "";
+                document.getElementById('due-date').value = data.dueDate || "";
+                document.getElementById('customer-name').value = data.customerName || "";
+                document.getElementById('customer-address').value = data.customerAddress || "";
+                document.getElementById('document-notes').value = data.notes || "";
+                document.getElementById('discount').value = data.discount || 0;
+                if(data.discountType) {
+                    document.getElementById('discount-type').value = data.discountType;
+                }
+
+                const tbody = document.getElementById('items-body');
+                tbody.innerHTML = '';
+                
+                if(data.items && data.items.length > 0) {
+                    data.items.forEach(item => addRow(item));
+                } else {
+                    addRow(); 
+                }
+
+                updateDocTypeSync();
+                calculateTotal();
+            } catch (err) {
+                alert("ไฟล์เสียหายหรือไม่ถูกต้อง");
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = ''; 
+    }
+
+    function exportToExcel() {
+        if (typeof XLSX === 'undefined') {
+            alert('กรุณารอสักครู่ กำลังดึงระบบสร้าง Excel');
+            return;
+        }
+
+        const docType = document.getElementById('docType').innerText;
+        const docNum = document.getElementById('doc-num').value;
+        const docDate = document.getElementById('doc-date').value;
+        const dueDate = document.getElementById('due-date').value;
+        const customerName = document.getElementById('customer-name').value;
+        const customerAddress = document.getElementById('customer-address').value;
+        const notes = document.getElementById('document-notes').value;
+        const discount = parseFloat(document.getElementById('discount').value) || 0;
+        const discountType = document.getElementById('discount-type').value;
+
+        let excelData = [];
+        
+        excelData.push(["พีระวัฒน์เครื่องใช้ไฟฟ้าและวัสดุก่อสร้าง"]);
+        excelData.push([docType]);
+        excelData.push([]);
+        excelData.push(["ลูกค้า / Customer:", customerName]);
+        excelData.push(["ที่อยู่:", customerAddress]);
+        excelData.push(["เลขที่เอกสาร:", docNum, "วันที่:", docDate]);
+        if(dueDate) excelData.push(["ยืนยันราคาถึงวันที่:", dueDate]);
+        
+        excelData.push([]);
+        excelData.push(["ลำดับ", "รายการสินค้า / บริการ", "จำนวน", "หน่วย", "ราคา/หน่วย", "จำนวนเงิน"]);
+
+        const rows = document.querySelectorAll('#items-body tr');
+        let index = 1;
+        rows.forEach(tr => {
+            const desc = tr.querySelector('.editable-desc').innerText;
+            const qty = parseFloat(tr.querySelector('.qty').value) || 0;
+            const unit = tr.querySelector('.unit-select').value;
+            const price = parseFloat(tr.querySelector('.price').value) || 0;
+            const total = qty * price;
+            
+            excelData.push([index++, desc, qty, unit, price, total]);
+        });
+
+        const subtotal = document.getElementById('subtotal').innerText.replace(/,/g, '');
+        const grandTotal = document.getElementById('grand-total').innerText.replace(/,/g, '');
+        excelData.push([]);
+        excelData.push(["หมายเหตุ:", notes, "", "", "รวมเป็นเงินทั้งหมด", parseFloat(subtotal)]);
+        excelData.push(["", "", "", "", discountType, discount]);
+        excelData.push(["", "", "", "", "ยอดชำระสุทธิ", parseFloat(grandTotal)]);
+        excelData.push(["ตัวหนังสือ:", document.getElementById('thai-total-text').innerText]);
+
+        const ws = XLSX.utils.aoa_to_sheet(excelData);
+        ws['!cols'] = [
+            { wch: 8 }, { wch: 45 }, { wch: 10 }, { wch: 10 }, { wch: 15 }, { wch: 15 }
+        ];
+
+        const wb = XLSX.utils.book_new();
+        XXLSX.utils.book_append_sheet(wb, ws, "Invoice");
+
+        const fileName = (docNum || "Invoice") + ".xlsx";
+        XXLSX.writeFile(wb, fileName);
+    }
+
+    window.onload = function() {
+        document.getElementById('doc-date').value = getTodayThai();
+        addRow(); 
+        updateDocTypeSync(); /* เรียกใช้เพื่อให้เปลี่ยนคำในใบเซ็นชื่อตั้งแต่เริ่มต้น */
+        calculateTotal();
+    };
+</script>
+
+</body>
+</html>
